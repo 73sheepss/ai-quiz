@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나의 인공지능 현재 레벨은?</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', -apple-system, sans-serif;
+    background: #f4f6f9;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+  .container { width: 100%; max-width: 520px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* INTRO */
+  .intro-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .intro-hero { margin-bottom: 1.5rem; }
+  .intro-title { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 0.5rem; }
+  .intro-sub { font-size: 15px; color: #666; line-height: 1.7; margin-bottom: 1.5rem; }
+  .tag-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 1.75rem; }
+  .tag { background: #f0faf5; border: 1px solid #b2e0cc; border-radius: 99px; padding: 5px 14px; font-size: 13px; color: #1a7a50; }
+  .start-btn {
+    width: 100%; background: #1D9E75; border: none; border-radius: 14px;
+    padding: 15px; font-size: 16px; font-weight: 700; cursor: pointer; color: #fff;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .start-btn:hover { background: #168a62; transform: translateY(-1px); }
+  .start-btn:active { transform: translateY(0); }
+
+  /* QUIZ */
+  .progress-wrap { margin-bottom: 1.25rem; }
+  .progress-info { display: flex; justify-content: space-between; font-size: 13px; color: #888; margin-bottom: 6px; }
+  .progress-bar-bg { height: 7px; background: #e8eaf0; border-radius: 99px; }
+  .progress-bar-fill { height: 7px; background: linear-gradient(90deg, #1D9E75, #5DCAA5); border-radius: 99px; transition: width 0.45s cubic-bezier(.4,0,.2,1); }
+
+  .question-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    margin-bottom: 1rem;
+  }
+  .q-scene-label { font-size: 11px; font-weight: 700; color: #1D9E75; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem; }
+  .q-illust {
+    width: 100%; height: 160px;
+    background: #f7f9fc;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  .q-illust svg { width: 100%; height: 100%; }
+  .q-text { font-size: 17px; font-weight: 600; color: #1a1a2e; line-height: 1.55; margin-bottom: 1.25rem; }
+  .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .choice-btn {
+    background: #f7f9fc; border: 1.5px solid #e0e4ed;
+    border-radius: 14px; padding: 14px 10px; font-size: 15px; font-weight: 700;
+    cursor: pointer; text-align: center; color: #1a1a2e;
+    transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .choice-btn:hover:not(:disabled) { border-color: #1D9E75; background: #f0faf5; }
+  .choice-btn.correct { background: #e6f9f1; border: 2px solid #1D9E75; color: #0a5c38; }
+  .choice-btn.wrong { background: #fff0f0; border: 2px solid #e85555; color: #8b1a1a; }
+  .choice-btn.reveal { background: #e6f9f1; border: 2px solid #1D9E75; color: #0a5c38; }
+  .choice-btn:disabled { cursor: default; }
+
+  .feedback-box {
+    border-radius: 12px; padding: 11px 14px; margin-top: 1rem;
+    font-size: 14px; line-height: 1.6; display: none;
+  }
+  .feedback-box.show { display: block; }
+  .feedback-correct { background: #e6f9f1; color: #0a6640; }
+  .feedback-wrong { background: #fff0f0; color: #922222; }
+
+  .next-btn {
+    width: 100%; background: #fff; border: 1.5px solid #dde2ee;
+    border-radius: 14px; padding: 13px; font-size: 15px; font-weight: 700;
+    cursor: pointer; color: #333; display: none; transition: all 0.15s;
+  }
+  .next-btn.show { display: block; }
+  .next-btn:hover { background: #f0faf5; border-color: #1D9E75; color: #1D9E75; }
+
+  /* RESULT */
+  .result-card {
+    background: #fff; border-radius: 20px; padding: 2.5rem 2rem;
+    text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  }
+  .result-hero { margin-bottom: 1.25rem; }
+  .score-big { font-size: 62px; font-weight: 800; color: #1a1a2e; line-height: 1; }
+  .score-denom { font-size: 20px; color: #aaa; font-weight: 400; }
+  .level-badge {
+    display: inline-block; border-radius: 99px;
+    padding: 6px 20px; font-size: 14px; font-weight: 700; margin: 0.75rem 0 0.5rem;
+  }
+  .level-title { font-size: 22px; font-weight: 800; color: #1a1a2e; margin-bottom: 0.5rem; }
+  .level-desc { font-size: 14px; color: #666; line-height: 1.7; max-width: 360px; margin: 0 auto 1.5rem; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 0 1.5rem; }
+  .detail-cell { background: #f7f9fc; border-radius: 14px; padding: 14px; }
+  .detail-num { font-size: 26px; font-weight: 800; }
+  .detail-lbl { font-size: 12px; color: #888; margin-top: 3px; }
+  .retry-btn {
+    width: 100%; background: #1a1a2e; border: none; border-radius: 14px;
+    padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; color: #fff;
+    transition: background 0.15s;
+  }
+  .retry-btn:hover { background: #2d2d4e; }
+
+  .emoji-icon { font-size: 36px; line-height: 1; display: block; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- INTRO -->
+  <div id="screen-intro" class="screen active">
+    <div class="intro-card">
+      <div class="intro-hero">
+        <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="60" cy="60" r="54" fill="#e6f9f1"/>
+          <rect x="35" y="38" width="50" height="38" rx="10" fill="#1D9E75"/>
+          <rect x="42" y="46" width="14" height="10" rx="3" fill="#fff" opacity="0.9"/>
+          <rect x="64" y="46" width="14" height="10" rx="3" fill="#fff" opacity="0.9"/>
+          <rect x="46" y="62" width="28" height="4" rx="2" fill="#fff" opacity="0.6"/>
+          <rect x="56" y="30" width="8" height="10" rx="4" fill="#1D9E75"/>
+          <rect x="25" y="50" width="10" height="6" rx="3" fill="#5DCAA5"/>
+          <rect x="85" y="50" width="10" height="6" rx="3" fill="#5DCAA5"/>
+          <circle cx="60" cy="85" r="8" fill="#1D9E75"/>
+          <rect x="56" y="93" width="8" height="10" rx="2" fill="#1a7a50"/>
+          <rect x="45" y="100" width="30" height="4" rx="2" fill="#1a7a50"/>
+          <circle cx="42" cy="56" r="2" fill="#1D9E75"/>
+          <circle cx="78" cy="56" r="2" fill="#1D9E75"/>
+        </svg>
+      </div>
+      <p class="intro-title">나의 인공지능 현재 레벨은?</p>
+      <p class="intro-sub">주어진 장면이 인공지능인지 아닌지 골라봐!<br>총 10문제로 나의 AI 이해 레벨을 확인해 보자.</p>
+      <div class="tag-row">
+        <span class="tag">📋 10문제</span>
+        <span class="tag">⏱ 약 3분</span>
+        <span class="tag">🏫 6학년 수준</span>
+      </div>
+      <button class="start-btn" onclick="startQuiz()">🚀 퀴즈 시작하기</button>
+    </div>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="screen-quiz" class="screen">
+    <div class="progress-wrap">
+      <div class="progress-info">
+        <span id="step-info">1 / 10</span>
+        <span id="score-live">점수: 0</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+    <div class="question-card">
+      <div class="q-scene-label">🔍 어떤 장면일까?</div>
+      <div class="q-illust" id="q-illust"></div>
+      <div class="q-text" id="q-text"></div>
+      <div class="choice-row">
+        <button class="choice-btn" id="btn-yes" onclick="answer(true)">🧠 인공지능</button>
+        <button class="choice-btn" id="btn-no" onclick="answer(false)">🔧 인공지능 아님</button>
+      </div>
+      <div class="feedback-box" id="feedback-box"></div>
+    </div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">다음 문제 →</button>
+  </div>
+
+  <!-- RESULT -->
+  <div id="screen-result" class="screen">
+    <div class="result-card">
+      <div class="result-hero">
+        <div id="result-illust"></div>
+      </div>
+      <div class="score-big" id="score-num">0</div>
+      <div class="score-denom">/ 10점</div>
+      <div class="level-badge" id="level-badge"></div>
+      <p class="level-title" id="level-title"></p>
+      <p class="level-desc" id="level-desc"></p>
+      <div class="detail-grid">
+        <div class="detail-cell">
+          <div class="detail-num" id="res-correct" style="color:#1D9E75">0</div>
+          <div class="detail-lbl">✅ 맞은 문제</div>
+        </div>
+        <div class="detail-cell">
+          <div class="detail-num" id="res-wrong" style="color:#e85555">0</div>
+          <div class="detail-lbl">❌ 틀린 문제</div>
+        </div>
+      </div>
+      <button class="retry-btn" onclick="retryQuiz()">🔄 다시 도전하기</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── SVG Illustrations ──────────────────────────────────────────────
+const ILLUSTRATIONS = {
+  car: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#e8f4fd"/>
+    <rect x="0" y="120" width="320" height="40" fill="#c8d8e8"/>
+    <rect x="0" y="118" width="320" height="5" fill="#a0b8cc"/>
+    <!-- road lines -->
+    <rect x="30" y="138" width="40" height="4" rx="2" fill="#fff" opacity="0.6"/>
+    <rect x="140" y="138" width="40" height="4" rx="2" fill="#fff" opacity="0.6"/>
+    <rect x="250" y="138" width="40" height="4" rx="2" fill="#fff" opacity="0.6"/>
+    <!-- car body -->
+    <rect x="80" y="88" width="160" height="38" rx="8" fill="#2563eb"/>
+    <path d="M110 88 Q125 65 160 65 Q195 65 210 88Z" fill="#1d4ed8"/>
+    <!-- windows -->
+    <rect x="118" y="70" width="34" height="20" rx="4" fill="#93c5fd"/>
+    <rect x="168" y="70" width="34" height="20" rx="4" fill="#93c5fd"/>
+    <!-- wheels -->
+    <circle cx="118" cy="126" r="16" fill="#1e293b"/>
+    <circle cx="118" cy="126" r="8" fill="#64748b"/>
+    <circle cx="202" cy="126" r="16" fill="#1e293b"/>
+    <circle cx="202" cy="126" r="8" fill="#64748b"/>
+    <!-- sensor waves -->
+    <path d="M248 88 Q260 95 260 108 Q260 121 248 128" stroke="#f59e0b" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M254 82 Q272 92 272 108 Q272 124 254 134" stroke="#f59e0b" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <path d="M260 76 Q284 90 284 108 Q284 126 260 140" stroke="#f59e0b" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.4"/>
+    <!-- AI label -->
+    <rect x="130" y="92" width="60" height="20" rx="6" fill="#10b981"/>
+    <text x="160" y="106" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">AI DRIVE</text>
+  </svg>`,
+
+  face: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f0f4ff"/>
+    <!-- phone -->
+    <rect x="50" y="20" width="90" height="120" rx="12" fill="#1e293b"/>
+    <rect x="56" y="30" width="78" height="100" rx="6" fill="#334155"/>
+    <!-- face on screen -->
+    <circle cx="95" cy="72" r="28" fill="#fde68a"/>
+    <circle cx="87" cy="66" r="4" fill="#1e293b"/>
+    <circle cx="103" cy="66" r="4" fill="#1e293b"/>
+    <circle cx="88" cy="65" r="1.5" fill="#fff"/>
+    <circle cx="104" cy="65" r="1.5" fill="#fff"/>
+    <path d="M86 80 Q95 88 104 80" stroke="#92400e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- scan lines -->
+    <line x1="56" y1="58" x2="134" y2="58" stroke="#10b981" stroke-width="1.5" opacity="0.8"/>
+    <rect x="62" y="35" width="12" height="12" stroke="#10b981" stroke-width="2" fill="none" rx="2"/>
+    <rect x="118" y="35" width="12" height="12" stroke="#10b981" stroke-width="2" fill="none" rx="2"/>
+    <rect x="62" y="108" width="12" height="12" stroke="#10b981" stroke-width="2" fill="none" rx="2"/>
+    <rect x="118" y="108" width="12" height="12" stroke="#10b981" stroke-width="2" fill="none" rx="2"/>
+    <!-- check icon -->
+    <circle cx="95" cy="118" r="8" fill="#10b981"/>
+    <path d="M90 118 L93.5 121.5 L100 115" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- dots/pattern on right -->
+    <circle cx="210" cy="50" r="5" fill="#818cf8" opacity="0.8"/>
+    <circle cx="230" cy="40" r="3" fill="#818cf8" opacity="0.6"/>
+    <circle cx="250" cy="55" r="4" fill="#818cf8" opacity="0.7"/>
+    <circle cx="220" cy="70" r="6" fill="#818cf8" opacity="0.5"/>
+    <circle cx="245" cy="75" r="3" fill="#818cf8" opacity="0.6"/>
+    <circle cx="260" cy="45" r="5" fill="#6366f1" opacity="0.5"/>
+    <line x1="210" y1="50" x2="230" y2="40" stroke="#818cf8" stroke-width="1" opacity="0.4"/>
+    <line x1="230" y1="40" x2="250" y2="55" stroke="#818cf8" stroke-width="1" opacity="0.4"/>
+    <line x1="250" y1="55" x2="245" y2="75" stroke="#818cf8" stroke-width="1" opacity="0.4"/>
+    <line x1="210" y1="50" x2="220" y2="70" stroke="#818cf8" stroke-width="1" opacity="0.4"/>
+    <text x="230" y="110" text-anchor="middle" fill="#6366f1" font-size="12" font-weight="700" font-family="sans-serif">얼굴 인식</text>
+  </svg>`,
+
+  youtube: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fff8f0"/>
+    <!-- laptop -->
+    <rect x="60" y="30" width="200" height="110" rx="8" fill="#1e293b"/>
+    <rect x="68" y="38" width="184" height="88" rx="4" fill="#0f172a"/>
+    <rect x="40" y="140" width="240" height="8" rx="4" fill="#334155"/>
+    <!-- main video -->
+    <rect x="74" y="44" width="110" height="62" rx="3" fill="#dc2626"/>
+    <polygon points="118,65 118,90 140,77.5" fill="#fff"/>
+    <text x="129" y="115" text-anchor="middle" fill="#ef4444" font-size="9" font-weight="700" font-family="sans-serif">▶ 재생중</text>
+    <!-- recommendation cards -->
+    <rect x="192" y="44" width="52" height="30" rx="3" fill="#1e40af"/>
+    <polygon points="210,53 210,66 220,59.5" fill="#fff" opacity="0.9"/>
+    <rect x="192" y="80" width="52" height="30" rx="3" fill="#065f46"/>
+    <polygon points="210,89 210,102 220,95.5" fill="#fff" opacity="0.9"/>
+    <!-- sparkle/AI label -->
+    <circle cx="195" cy="42" r="8" fill="#f59e0b"/>
+    <text x="195" y="46" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="sans-serif">AI</text>
+    <!-- arrow -->
+    <path d="M185 48 L192 48" stroke="#f59e0b" stroke-width="2" fill="none" marker-end="url(#arr)"/>
+  </svg>`,
+
+  xray: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#0f172a"/>
+    <!-- x-ray panel -->
+    <rect x="40" y="15" width="140" height="130" rx="6" fill="#1e293b"/>
+    <rect x="46" y="21" width="128" height="118" rx="4" fill="#0f172a"/>
+    <!-- lung shapes -->
+    <ellipse cx="88" cy="80" rx="26" ry="42" fill="#e2e8f0" opacity="0.15"/>
+    <ellipse cx="124" cy="80" rx="26" ry="42" fill="#e2e8f0" opacity="0.15"/>
+    <!-- ribs -->
+    <path d="M68 50 Q110 45 144 50" stroke="#e2e8f0" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <path d="M65 62 Q110 57 147 62" stroke="#e2e8f0" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <path d="M63 74 Q110 69 149 74" stroke="#e2e8f0" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <path d="M63 86 Q110 81 149 86" stroke="#e2e8f0" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <!-- anomaly highlight -->
+    <circle cx="124" cy="65" r="12" stroke="#ef4444" stroke-width="2" fill="none"/>
+    <circle cx="124" cy="65" r="6" fill="#ef4444" opacity="0.3"/>
+    <!-- center spine -->
+    <rect x="106" y="30" width="8" height="100" rx="2" fill="#e2e8f0" opacity="0.2"/>
+    <!-- AI analysis panel -->
+    <rect x="192" y="20" width="108" height="120" rx="8" fill="#1e293b"/>
+    <text x="246" y="42" text-anchor="middle" fill="#10b981" font-size="11" font-weight="700" font-family="sans-serif">AI 분석 결과</text>
+    <rect x="200" y="50" width="92" height="1" fill="#334155"/>
+    <rect x="200" y="58" width="50" height="6" rx="3" fill="#334155"/>
+    <rect x="254" y="58" width="36" height="6" rx="3" fill="#ef4444"/>
+    <rect x="200" y="70" width="60" height="6" rx="3" fill="#334155"/>
+    <rect x="264" y="70" width="26" height="6" rx="3" fill="#10b981"/>
+    <rect x="200" y="82" width="44" height="6" rx="3" fill="#334155"/>
+    <rect x="248" y="82" width="42" height="6" rx="3" fill="#f59e0b"/>
+    <!-- confidence bar -->
+    <text x="200" y="106" fill="#94a3b8" font-size="9" font-family="sans-serif">정확도</text>
+    <rect x="200" y="110" width="92" height="8" rx="4" fill="#334155"/>
+    <rect x="200" y="110" width="82" height="8" rx="4" fill="#10b981"/>
+    <text x="246" y="132" text-anchor="middle" fill="#10b981" font-size="11" font-weight="700" font-family="sans-serif">89%</text>
+  </svg>`,
+
+  speaker: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fef3c7"/>
+    <!-- speaker device -->
+    <rect x="110" y="35" width="100" height="90" rx="18" fill="#1e293b"/>
+    <circle cx="160" cy="80" r="28" fill="#374151"/>
+    <circle cx="160" cy="80" r="18" fill="#4b5563"/>
+    <circle cx="160" cy="80" r="8" fill="#f59e0b"/>
+    <rect x="136" y="118" width="48" height="5" rx="2.5" fill="#374151"/>
+    <!-- sound waves left -->
+    <path d="M100 68 Q88 80 100 92" stroke="#f59e0b" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M90 58 Q72 80 90 102" stroke="#f59e0b" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <path d="M80 48 Q56 80 80 112" stroke="#f59e0b" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.4"/>
+    <!-- speech bubble -->
+    <rect x="220" y="30" width="84" height="50" rx="10" fill="#fff"/>
+    <path d="M224 80 L216 92 L235 80Z" fill="#fff"/>
+    <text x="262" y="53" text-anchor="middle" fill="#1e293b" font-size="11" font-weight="700" font-family="sans-serif">"오늘 날씨</text>
+    <text x="262" y="68" text-anchor="middle" fill="#1e293b" font-size="11" font-weight="700" font-family="sans-serif">알려줘!"</text>
+    <!-- waveform response -->
+    <rect x="228" y="108" width="4" height="14" rx="2" fill="#10b981"/>
+    <rect x="236" y="102" width="4" height="26" rx="2" fill="#10b981"/>
+    <rect x="244" y="110" width="4" height="10" rx="2" fill="#10b981"/>
+    <rect x="252" y="104" width="4" height="22" rx="2" fill="#10b981"/>
+    <rect x="260" y="108" width="4" height="14" rx="2" fill="#10b981"/>
+    <rect x="268" y="100" width="4" height="30" rx="2" fill="#10b981"/>
+    <rect x="276" y="107" width="4" height="16" rx="2" fill="#10b981"/>
+    <rect x="284" y="106" width="4" height="18" rx="2" fill="#10b981"/>
+  </svg>`,
+
+  drone_farm: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#d1fae5"/>
+    <!-- sky -->
+    <rect width="320" height="90" fill="#bfdbfe"/>
+    <!-- field -->
+    <rect x="0" y="90" width="320" height="70" fill="#4ade80"/>
+    <!-- crop rows -->
+    <rect x="20" y="100" width="280" height="4" rx="2" fill="#16a34a" opacity="0.5"/>
+    <rect x="20" y="112" width="280" height="4" rx="2" fill="#16a34a" opacity="0.5"/>
+    <rect x="20" y="124" width="280" height="4" rx="2" fill="#16a34a" opacity="0.5"/>
+    <rect x="20" y="136" width="280" height="4" rx="2" fill="#16a34a" opacity="0.5"/>
+    <!-- sick spot -->
+    <circle cx="200" cy="118" r="14" fill="#854d0e" opacity="0.5"/>
+    <!-- drone body -->
+    <rect x="138" y="38" width="44" height="20" rx="6" fill="#1e293b"/>
+    <circle cx="160" cy="48" r="6" fill="#374151"/>
+    <!-- drone arms -->
+    <line x1="138" y1="42" x2="112" y2="32" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+    <line x1="182" y1="42" x2="208" y2="32" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+    <line x1="138" y1="54" x2="112" y2="64" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+    <line x1="182" y1="54" x2="208" y2="64" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+    <!-- propellers -->
+    <ellipse cx="112" cy="31" rx="18" ry="3" fill="#94a3b8" opacity="0.8"/>
+    <ellipse cx="208" cy="31" rx="18" ry="3" fill="#94a3b8" opacity="0.8"/>
+    <ellipse cx="112" cy="65" rx="18" ry="3" fill="#94a3b8" opacity="0.8"/>
+    <ellipse cx="208" cy="65" rx="18" ry="3" fill="#94a3b8" opacity="0.8"/>
+    <!-- scan beam -->
+    <path d="M148 58 L186 100 L174 100 L160 70 L146 100 L134 100 Z" fill="#ef4444" opacity="0.2"/>
+    <line x1="160" y1="58" x2="160" y2="130" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.6"/>
+    <!-- alert -->
+    <circle cx="200" cy="118" r="18" stroke="#ef4444" stroke-width="2.5" fill="none"/>
+    <text x="200" y="96" text-anchor="middle" fill="#dc2626" font-size="11" font-weight="700" font-family="sans-serif">⚠ 병충해</text>
+  </svg>`,
+
+  credit: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f0f4ff"/>
+    <!-- card -->
+    <rect x="30" y="50" width="140" height="85" rx="10" fill="#1e40af"/>
+    <rect x="30" y="50" width="140" height="35" rx="10" fill="#1d4ed8"/>
+    <rect x="30" y="72" width="140" height="6" fill="#1d4ed8"/>
+    <circle cx="55" cy="67" r="12" fill="#f59e0b" opacity="0.8"/>
+    <circle cx="68" cy="67" r="12" fill="#dc2626" opacity="0.6"/>
+    <text x="100" y="105" text-anchor="middle" fill="#bfdbfe" font-size="13" letter-spacing="4" font-family="monospace">**** 4521</text>
+    <text x="50" y="124" fill="#93c5fd" font-size="9" font-family="sans-serif">KIM CHULSOO</text>
+    <!-- transactions -->
+    <rect x="182" y="20" width="120" height="30" rx="8" fill="#fff"/>
+    <rect x="192" y="30" width="12" height="12" rx="3" fill="#10b981"/>
+    <text x="210" y="40" fill="#374151" font-size="10" font-weight="700" font-family="sans-serif">카페 결제 2,500원</text>
+    <rect x="182" y="56" width="120" height="30" rx="8" fill="#fff"/>
+    <rect x="192" y="66" width="12" height="12" rx="3" fill="#10b981"/>
+    <text x="210" y="76" fill="#374151" font-size="10" font-weight="700" font-family="sans-serif">편의점 4,200원</text>
+    <!-- suspicious transaction -->
+    <rect x="182" y="92" width="120" height="35" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5"/>
+    <rect x="192" y="100" width="12" height="12" rx="3" fill="#ef4444"/>
+    <text x="210" y="110" fill="#ef4444" font-size="10" font-weight="700" font-family="sans-serif">🚨 해외결제 이상!</text>
+    <text x="192" y="122" fill="#ef4444" font-size="9" font-family="sans-serif">AI가 자동 탐지함</text>
+  </svg>`,
+
+  writing: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fafafa"/>
+    <!-- notebook -->
+    <rect x="30" y="20" width="150" height="120" rx="8" fill="#fff" stroke="#e2e8f0" stroke-width="1.5"/>
+    <rect x="30" y="20" width="16" height="120" rx="8" fill="#6366f1"/>
+    <!-- lines -->
+    <line x1="54" y1="45" x2="168" y2="45" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="54" y1="60" x2="168" y2="60" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="54" y1="75" x2="168" y2="75" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="54" y1="90" x2="140" y2="90" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="54" y1="105" x2="168" y2="105" stroke="#e2e8f0" stroke-width="1.5"/>
+    <line x1="54" y1="120" x2="155" y2="120" stroke="#e2e8f0" stroke-width="1.5"/>
+    <!-- written text -->
+    <rect x="54" y="38" width="90" height="8" rx="3" fill="#1e293b"/>
+    <rect x="54" y="53" width="100" height="8" rx="3" fill="#1e293b"/>
+    <rect x="54" y="68" width="70" height="8" rx="3" fill="#1e293b"/>
+    <!-- underline/highlight -->
+    <rect x="54" y="83" width="60" height="8" rx="3" fill="#fde68a"/>
+    <rect x="54" y="98" width="95" height="8" rx="3" fill="#1e293b"/>
+    <!-- AI feedback bubble -->
+    <rect x="190" y="30" width="110" height="95" rx="10" fill="#6366f1"/>
+    <path d="M192 90 L180 105 L205 90Z" fill="#6366f1"/>
+    <text x="245" y="52" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">AI 피드백</text>
+    <rect x="198" y="58" width="94" height="1" fill="#818cf8"/>
+    <text x="245" y="72" text-anchor="middle" fill="#c7d2fe" font-size="10" font-family="sans-serif">이 문장을 더</text>
+    <text x="245" y="85" text-anchor="middle" fill="#c7d2fe" font-size="10" font-family="sans-serif">구체적으로 써봐!</text>
+    <rect x="198" y="100" width="70" height="14" rx="7" fill="#4f46e5"/>
+    <text x="233" y="111" text-anchor="middle" fill="#e0e7ff" font-size="10" font-weight="700" font-family="sans-serif">수정하기 →</text>
+  </svg>`,
+
+  dogcat: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fdf4ff"/>
+    <!-- phone with camera -->
+    <rect x="110" y="15" width="100" height="130" rx="14" fill="#1e293b"/>
+    <rect x="116" y="25" width="88" height="88" rx="8" fill="#0f172a"/>
+    <!-- cat face -->
+    <circle cx="160" cy="69" r="28" fill="#fbbf24"/>
+    <!-- cat ears -->
+    <polygon points="136,48 130,30 148,42" fill="#fbbf24"/>
+    <polygon points="184,48 190,30 172,42" fill="#fbbf24"/>
+    <polygon points="137,47 132,33 147,43" fill="#f9a8d4"/>
+    <polygon points="183,47 188,33 173,43" fill="#f9a8d4"/>
+    <!-- cat eyes -->
+    <ellipse cx="151" cy="64" rx="5" ry="6" fill="#1e293b"/>
+    <ellipse cx="169" cy="64" rx="5" ry="6" fill="#1e293b"/>
+    <circle cx="152" cy="62" r="2" fill="#fff"/>
+    <circle cx="170" cy="62" r="2" fill="#fff"/>
+    <!-- cat nose/mouth -->
+    <ellipse cx="160" cy="73" rx="3" ry="2" fill="#f9a8d4"/>
+    <path d="M155 76 Q160 80 165 76" stroke="#92400e" stroke-width="1.5" fill="none"/>
+    <!-- whiskers -->
+    <line x1="130" y1="72" x2="150" y2="74" stroke="#92400e" stroke-width="1"/>
+    <line x1="130" y1="77" x2="150" y2="76" stroke="#92400e" stroke-width="1"/>
+    <line x1="170" y1="74" x2="190" y2="72" stroke="#92400e" stroke-width="1"/>
+    <line x1="170" y1="76" x2="190" y2="77" stroke="#92400e" stroke-width="1"/>
+    <!-- scan corners -->
+    <rect x="118" y="27" width="12" height="12" stroke="#10b981" stroke-width="2.5" fill="none" rx="2"/>
+    <rect x="190" y="27" width="12" height="12" stroke="#10b981" stroke-width="2.5" fill="none" rx="2"/>
+    <rect x="118" y="103" width="12" height="12" stroke="#10b981" stroke-width="2.5" fill="none" rx="2"/>
+    <rect x="190" y="103" width="12" height="12" stroke="#10b981" stroke-width="2.5" fill="none" rx="2"/>
+    <!-- result -->
+    <rect x="122" y="118" width="76" height="22" rx="8" fill="#10b981"/>
+    <text x="160" y="133" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">🐱 고양이 98%</text>
+    <!-- image samples outside -->
+    <rect x="24" y="30" width="72" height="50" rx="6" fill="#fde68a"/>
+    <circle cx="60" cy="55" r="16" fill="#fbbf24"/>
+    <text x="60" y="98" text-anchor="middle" fill="#92400e" font-size="10" font-family="sans-serif">학습 데이터</text>
+    <rect x="224" y="30" width="72" height="50" rx="6" fill="#dbeafe"/>
+    <circle cx="260" cy="52" r="14" fill="#93c5fd"/>
+    <rect x="248" y="60" width="24" height="10" rx="3" fill="#6b7280"/>
+    <text x="260" y="98" text-anchor="middle" fill="#1e40af" font-size="10" font-family="sans-serif">학습 데이터</text>
+  </svg>`,
+
+  skin: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fff7f0"/>
+    <!-- phone -->
+    <rect x="85" y="15" width="90" height="130" rx="14" fill="#1e293b"/>
+    <rect x="91" y="22" width="78" height="100" rx="8" fill="#fde68a"/>
+    <!-- skin texture -->
+    <circle cx="130" cy="72" r="7" fill="#f97316" opacity="0.5"/>
+    <circle cx="148" cy="55" r="4" fill="#fb923c" opacity="0.4"/>
+    <circle cx="155" cy="80" r="5" fill="#f97316" opacity="0.3"/>
+    <circle cx="118" cy="58" r="3" fill="#fb923c" opacity="0.5"/>
+    <!-- scan circles -->
+    <circle cx="130" cy="72" r="14" stroke="#ef4444" stroke-width="2" fill="none"/>
+    <circle cx="130" cy="72" r="20" stroke="#ef4444" stroke-width="1.5" fill="none" opacity="0.5"/>
+    <circle cx="148" cy="55" r="10" stroke="#f59e0b" stroke-width="2" fill="none"/>
+    <!-- result bar -->
+    <rect x="91" y="115" width="78" height="5" rx="2.5" fill="#334155"/>
+    <rect x="91" y="115" width="55" height="5" rx="2.5" fill="#f97316"/>
+    <text x="130" y="138" text-anchor="middle" fill="#fff" font-size="10" font-weight="700" font-family="sans-serif">분석 완료 70%</text>
+    <!-- result panel -->
+    <rect x="190" y="30" width="110" height="100" rx="10" fill="#fff" stroke="#fed7aa" stroke-width="1.5"/>
+    <text x="245" y="50" text-anchor="middle" fill="#ea580c" font-size="11" font-weight="700" font-family="sans-serif">피부 분석 결과</text>
+    <rect x="198" y="57" width="94" height="1" fill="#fed7aa"/>
+    <rect x="198" y="64" width="60" height="7" rx="3" fill="#fee2e2"/>
+    <rect x="198" y="64" width="50" height="7" rx="3" fill="#ef4444"/>
+    <text x="198" y="82" fill="#6b7280" font-size="9" font-family="sans-serif">건조도</text>
+    <rect x="198" y="85" width="94" height="7" rx="3" fill="#f3f4f6"/>
+    <rect x="198" y="85" width="70" height="7" rx="3" fill="#f97316"/>
+    <text x="198" y="103" fill="#6b7280" font-size="9" font-family="sans-serif">트러블</text>
+    <rect x="198" y="106" width="94" height="7" rx="3" fill="#f3f4f6"/>
+    <rect x="198" y="106" width="30" height="7" rx="3" fill="#10b981"/>
+    <text x="245" y="122" text-anchor="middle" fill="#ea580c" font-size="10" font-weight="700" font-family="sans-serif">관리 추천 →</text>
+  </svg>`,
+
+  drowsy: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f8f9fa"/>
+    <!-- car interior dashboard view -->
+    <rect x="0" y="80" width="320" height="80" fill="#1e293b"/>
+    <rect x="20" y="90" width="280" height="55" rx="8" fill="#0f172a"/>
+    <!-- dashboard gauges -->
+    <circle cx="80" cy="118" r="20" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+    <path d="M80 102 L80 108" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
+    <path d="M66 110 L71 113" stroke="#64748b" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M94 110 L89 113" stroke="#64748b" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="80" cy="118" r="3" fill="#f59e0b"/>
+    <circle cx="240" cy="118" r="20" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+    <text x="240" y="122" text-anchor="middle" fill="#10b981" font-size="12" font-weight="700" font-family="monospace">60</text>
+    <!-- road / windshield -->
+    <rect x="0" y="0" width="320" height="80" fill="#3b82f6" opacity="0.2"/>
+    <line x1="160" y1="20" x2="160" y2="80" stroke="#fff" stroke-width="2" stroke-dasharray="8,6"/>
+    <line x1="120" y1="80" x2="80" y2="20" stroke="#fff" stroke-width="1.5" stroke-dasharray="6,5" opacity="0.5"/>
+    <line x1="200" y1="80" x2="240" y2="20" stroke="#fff" stroke-width="1.5" stroke-dasharray="6,5" opacity="0.5"/>
+    <!-- sleepy driver (top area) -->
+    <circle cx="160" cy="35" r="18" fill="#fde68a"/>
+    <!-- droopy eyes -->
+    <path d="M152 32 Q155 36 158 32" stroke="#1e293b" stroke-width="2" fill="none"/>
+    <path d="M162 32 Q165 36 168 32" stroke="#1e293b" stroke-width="2" fill="none"/>
+    <!-- alert flash -->
+    <rect x="60" y="5" width="200" height="28" rx="8" fill="#ef4444"/>
+    <text x="160" y="24" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="sans-serif">⚠ 졸음 감지! 휴식하세요</text>
+  </svg>`,
+
+  traffic: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f0fdf4"/>
+    <!-- intersection top view -->
+    <rect x="0" y="60" width="320" height="40" fill="#94a3b8"/>
+    <rect x="120" y="0" width="80" height="160" fill="#94a3b8"/>
+    <!-- sidewalks -->
+    <rect x="0" y="55" width="115" height="10" fill="#cbd5e1"/>
+    <rect x="205" y="55" width="115" height="10" fill="#cbd5e1"/>
+    <rect x="0" y="95" width="115" height="10" fill="#cbd5e1"/>
+    <rect x="205" y="95" width="115" height="10" fill="#cbd5e1"/>
+    <rect x="115" y="0" width="10" height="55" fill="#cbd5e1"/>
+    <rect x="195" y="0" width="10" height="55" fill="#cbd5e1"/>
+    <rect x="115" y="105" width="10" height="55" fill="#cbd5e1"/>
+    <rect x="195" y="105" width="10" height="55" fill="#cbd5e1"/>
+    <!-- road markings -->
+    <rect x="0" y="78" width="110" height="4" rx="2" fill="#fff" opacity="0.6"/>
+    <rect x="210" y="78" width="110" height="4" rx="2" fill="#fff" opacity="0.6"/>
+    <rect x="158" y="0" width="4" height="55" rx="2" fill="#fff" opacity="0.6"/>
+    <rect x="158" y="105" width="4" height="55" rx="2" fill="#fff" opacity="0.6"/>
+    <!-- cars -->
+    <rect x="20" y="64" width="28" height="16" rx="4" fill="#3b82f6"/>
+    <rect x="60" y="66" width="24" height="14" rx="4" fill="#f97316"/>
+    <rect x="240" y="68" width="28" height="12" rx="3" fill="#8b5cf6"/>
+    <!-- traffic light -->
+    <rect x="196" y="50" width="14" height="32" rx="4" fill="#1e293b"/>
+    <circle cx="203" cy="57" r="4" fill="#ef4444"/>
+    <circle cx="203" cy="66" r="4" fill="#374151"/>
+    <circle cx="203" cy="75" r="4" fill="#374151"/>
+    <!-- AI timer -->
+    <rect x="215" y="48" width="58" height="22" rx="6" fill="#10b981"/>
+    <text x="244" y="63" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">AI: 45초 ▶</text>
+    <!-- data overlay -->
+    <rect x="10" y="108" width="90" height="40" rx="6" fill="#fff" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="55" y="122" text-anchor="middle" fill="#64748b" font-size="9" font-family="sans-serif">차량 혼잡 예측</text>
+    <rect x="18" y="127" width="74" height="6" rx="3" fill="#e2e8f0"/>
+    <rect x="18" y="127" width="50" height="6" rx="3" fill="#f97316"/>
+  </svg>`,
+
+  chatbot: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f8f0ff"/>
+    <!-- chat window -->
+    <rect x="30" y="15" width="260" height="130" rx="12" fill="#fff" stroke="#e9d5ff" stroke-width="1.5"/>
+    <!-- header -->
+    <rect x="30" y="15" width="260" height="36" rx="12" fill="#7c3aed"/>
+    <rect x="30" y="39" width="260" height="12" fill="#7c3aed"/>
+    <circle cx="52" cy="33" r="10" fill="#a78bfa"/>
+    <text x="53" y="37" text-anchor="middle" fill="#fff" font-size="9" font-weight="700" font-family="sans-serif">AI</text>
+    <text x="75" y="37" fill="#e9d5ff" font-size="11" font-weight="700" font-family="sans-serif">AI 챗봇 도우미</text>
+    <!-- ai message 1 -->
+    <rect x="40" y="60" width="140" height="24" rx="10" fill="#f3e8ff"/>
+    <text x="52" y="76" fill="#5b21b6" font-size="10" font-family="sans-serif">안녕하세요! 기억해요 😊</text>
+    <!-- user message -->
+    <rect x="150" y="90" width="130" height="24" rx="10" fill="#7c3aed"/>
+    <text x="162" y="106" fill="#fff" font-size="10" font-family="sans-serif">저번에 말한 거요?</text>
+    <!-- ai message 2 -->
+    <rect x="40" y="120" width="175" height="20" rx="10" fill="#f3e8ff"/>
+    <text x="52" y="134" fill="#5b21b6" font-size="10" font-family="sans-serif">네! 수학 질문 하셨잖아요 📚</text>
+    <!-- memory dots -->
+    <circle cx="250" cy="76" r="5" fill="#c4b5fd"/>
+    <circle cx="265" cy="76" r="5" fill="#a78bfa"/>
+    <circle cx="280" cy="76" r="5" fill="#7c3aed"/>
+    <text x="265" y="95" text-anchor="middle" fill="#7c3aed" font-size="9" font-family="sans-serif">기억 저장 중</text>
+  </svg>`,
+
+  baduk: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fefce8"/>
+    <!-- board -->
+    <rect x="30" y="15" width="130" height="130" rx="4" fill="#d97706" opacity="0.3"/>
+    <rect x="32" y="17" width="126" height="126" rx="3" fill="#fbbf24" opacity="0.4"/>
+    <!-- grid lines -->
+    <line x1="46" y1="32" x2="46" y2="128" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="63" y1="32" x2="63" y2="128" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="80" y1="32" x2="80" y2="128" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="97" y1="32" x2="97" y2="128" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="114" y1="32" x2="114" y2="128" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="131" y1="32" x2="131" y2="128" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="148" y1="32" x2="148" y2="128" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="40" y1="32" x2="155" y2="32" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="40" y1="48" x2="155" y2="48" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="40" y1="64" x2="155" y2="64" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="40" y1="80" x2="155" y2="80" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="40" y1="96" x2="155" y2="96" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="40" y1="112" x2="155" y2="112" stroke="#92400e" stroke-width="0.8"/>
+    <line x1="40" y1="128" x2="155" y2="128" stroke="#92400e" stroke-width="0.8"/>
+    <!-- stones -->
+    <circle cx="80" cy="64" r="7" fill="#1e293b"/>
+    <circle cx="97" cy="48" r="7" fill="#f1f5f9"/>
+    <circle cx="63" cy="80" r="7" fill="#1e293b"/>
+    <circle cx="114" cy="80" r="7" fill="#f1f5f9"/>
+    <circle cx="80" cy="96" r="7" fill="#f1f5f9"/>
+    <circle cx="97" cy="112" r="7" fill="#1e293b"/>
+    <!-- AI highlight next move -->
+    <circle cx="97" cy="64" r="8" fill="none" stroke="#ef4444" stroke-width="2.5"/>
+    <circle cx="97" cy="64" r="3" fill="#ef4444" opacity="0.4"/>
+    <!-- AI analysis panel -->
+    <rect x="175" y="15" width="120" height="130" rx="10" fill="#1e293b"/>
+    <text x="235" y="38" text-anchor="middle" fill="#10b981" font-size="11" font-weight="700" font-family="sans-serif">AI 분석</text>
+    <rect x="183" y="44" width="104" height="1" fill="#334155"/>
+    <text x="183" y="60" fill="#94a3b8" font-size="9" font-family="sans-serif">최선의 수</text>
+    <text x="235" y="80" text-anchor="middle" fill="#f59e0b" font-size="22" font-weight="700" font-family="sans-serif">E5</text>
+    <text x="183" y="100" fill="#94a3b8" font-size="9" font-family="sans-serif">승리 확률</text>
+    <rect x="183" y="106" width="104" height="10" rx="5" fill="#334155"/>
+    <rect x="183" y="106" width="73" height="10" rx="5" fill="#10b981"/>
+    <text x="235" y="130" text-anchor="middle" fill="#10b981" font-size="12" font-weight="700" font-family="sans-serif">70%</text>
+  </svg>`,
+
+  translate: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f0fdf4"/>
+    <!-- phone left - Korean -->
+    <rect x="20" y="25" width="90" height="110" rx="12" fill="#1e293b"/>
+    <rect x="26" y="34" width="78" height="90" rx="6" fill="#065f46"/>
+    <text x="65" y="64" text-anchor="middle" fill="#6ee7b7" font-size="12" font-weight="700" font-family="sans-serif">안녕하세요!</text>
+    <text x="65" y="82" text-anchor="middle" fill="#a7f3d0" font-size="10" font-family="sans-serif">반갑습니다.</text>
+    <text x="65" y="98" text-anchor="middle" fill="#a7f3d0" font-size="10" font-family="sans-serif">잘 부탁드려요.</text>
+    <circle cx="65" cy="128" r="6" fill="#374151"/>
+    <!-- arrow / AI processing -->
+    <rect x="120" y="65" width="80" height="30" rx="10" fill="#10b981"/>
+    <text x="160" y="85" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">AI 번역 →</text>
+    <!-- wave animation representation -->
+    <path d="M122 60 Q130 52 138 60 Q146 68 154 60 Q162 52 170 60 Q178 68 186 60 Q194 52 198 60" stroke="#6ee7b7" stroke-width="1.5" fill="none"/>
+    <!-- phone right - English -->
+    <rect x="210" y="25" width="90" height="110" rx="12" fill="#1e293b"/>
+    <rect x="216" y="34" width="78" height="90" rx="6" fill="#1e40af"/>
+    <text x="255" y="64" text-anchor="middle" fill="#93c5fd" font-size="12" font-weight="700" font-family="sans-serif">Hello!</text>
+    <text x="255" y="82" text-anchor="middle" fill="#bfdbfe" font-size="10" font-family="sans-serif">Nice to meet you.</text>
+    <text x="255" y="98" text-anchor="middle" fill="#bfdbfe" font-size="10" font-family="sans-serif">Please take care!</text>
+    <circle cx="255" cy="128" r="6" fill="#374151"/>
+    <!-- globe icon -->
+    <circle cx="160" cy="130" r="15" fill="none" stroke="#10b981" stroke-width="1.5"/>
+    <ellipse cx="160" cy="130" rx="7" ry="15" fill="none" stroke="#10b981" stroke-width="1"/>
+    <line x1="145" y1="130" x2="175" y2="130" stroke="#10b981" stroke-width="1"/>
+  </svg>`,
+
+  // ── NON-AI ───────────────────────────────────────────────────────
+  vending: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fafafa"/>
+    <!-- vending machine body -->
+    <rect x="90" y="10" width="140" height="145" rx="8" fill="#334155"/>
+    <rect x="98" y="18" width="124" height="80" rx="4" fill="#1e293b"/>
+    <!-- drink grid -->
+    <rect x="104" y="24" width="36" height="28" rx="3" fill="#3b82f6"/>
+    <rect x="146" y="24" width="36" height="28" rx="3" fill="#ef4444"/>
+    <rect x="188" y="24" width="28" height="28" rx="3" fill="#10b981"/>
+    <rect x="104" y="58" width="36" height="28" rx="3" fill="#f59e0b"/>
+    <rect x="146" y="58" width="36" height="28" rx="3" fill="#8b5cf6"/>
+    <rect x="188" y="58" width="28" height="28" rx="3" fill="#ec4899"/>
+    <!-- button panel -->
+    <rect x="98" y="104" width="50" height="44" rx="4" fill="#0f172a"/>
+    <circle cx="108" cy="116" r="6" fill="#3b82f6"/>
+    <circle cx="124" cy="116" r="6" fill="#ef4444"/>
+    <circle cx="140" cy="116" r="6" fill="#10b981"/>
+    <circle cx="108" cy="132" r="6" fill="#f59e0b"/>
+    <circle cx="124" cy="132" r="6" fill="#8b5cf6"/>
+    <circle cx="140" cy="132" r="6" fill="#94a3b8"/>
+    <!-- slot -->
+    <rect x="155" y="118" width="64" height="22" rx="4" fill="#0f172a"/>
+    <rect x="162" y="124" width="50" height="10" rx="3" fill="#1e293b"/>
+    <!-- label -->
+    <rect x="105" y="89" width="112" height="12" rx="3" fill="#475569"/>
+    <text x="161" y="99" text-anchor="middle" fill="#94a3b8" font-size="9" font-family="sans-serif">버튼을 누르세요</text>
+    <!-- big X -->
+    <circle cx="248" cy="80" r="28" fill="#fee2e2"/>
+    <line x1="236" y1="68" x2="260" y2="92" stroke="#ef4444" stroke-width="5" stroke-linecap="round"/>
+    <line x1="260" y1="68" x2="236" y2="92" stroke="#ef4444" stroke-width="5" stroke-linecap="round"/>
+    <text x="248" y="128" text-anchor="middle" fill="#ef4444" font-size="10" font-weight="700" font-family="sans-serif">학습 없음!</text>
+  </svg>`,
+
+  elevator: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f1f5f9"/>
+    <!-- elevator shaft -->
+    <rect x="80" y="10" width="110" height="140" rx="4" fill="#e2e8f0"/>
+    <!-- door left/right (open) -->
+    <rect x="84" y="14" width="48" height="132" rx="3" fill="#94a3b8"/>
+    <rect x="138" y="14" width="48" height="132" rx="3" fill="#94a3b8"/>
+    <!-- door gap line -->
+    <line x1="135" y1="14" x2="135" y2="146" stroke="#64748b" stroke-width="2"/>
+    <!-- floor indicator -->
+    <rect x="95" y="25" width="80" height="30" rx="5" fill="#1e293b"/>
+    <text x="135" y="46" text-anchor="middle" fill="#10b981" font-size="22" font-weight="700" font-family="monospace">3F</text>
+    <!-- floor buttons panel (outside) -->
+    <rect x="205" y="50" width="50" height="80" rx="6" fill="#1e293b"/>
+    <circle cx="230" cy="70" r="10" fill="#334155"/>
+    <text x="230" y="74" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="sans-serif">▲</text>
+    <circle cx="230" cy="95" r="10" fill="#f59e0b"/>
+    <text x="230" y="99" text-anchor="middle" fill="#fff" font-size="11" font-family="sans-serif">3</text>
+    <circle cx="230" cy="120" r="10" fill="#334155"/>
+    <text x="230" y="124" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="sans-serif">▼</text>
+    <!-- X badge -->
+    <circle cx="45" cy="80" r="24" fill="#fee2e2"/>
+    <line x1="34" y1="69" x2="56" y2="91" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+    <line x1="56" y1="69" x2="34" y2="91" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+    <text x="45" y="118" text-anchor="middle" fill="#ef4444" font-size="9" font-weight="700" font-family="sans-serif">단순 기계</text>
+  </svg>`,
+
+  timer_ac: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f0f9ff"/>
+    <!-- AC unit -->
+    <rect x="50" y="30" width="180" height="60" rx="10" fill="#0284c7"/>
+    <rect x="58" y="44" width="164" height="18" rx="4" fill="#0369a1"/>
+    <!-- vents -->
+    <line x1="65" y1="48" x2="65" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="78" y1="48" x2="78" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="91" y1="48" x2="91" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="104" y1="48" x2="104" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="117" y1="48" x2="117" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="130" y1="48" x2="130" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="143" y1="48" x2="143" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="156" y1="48" x2="156" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="169" y1="48" x2="169" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="182" y1="48" x2="182" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="195" y1="48" x2="195" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <line x1="208" y1="48" x2="208" y2="58" stroke="#bae6fd" stroke-width="2"/>
+    <!-- display -->
+    <rect x="62" y="33" width="56" height="10" rx="3" fill="#0c4a6e"/>
+    <text x="90" y="41" text-anchor="middle" fill="#7dd3fc" font-size="8" font-family="monospace">22°C  08:00</text>
+    <!-- timer clock -->
+    <circle cx="160" cy="120" r="28" fill="#fff" stroke="#0284c7" stroke-width="2"/>
+    <line x1="160" y1="97" x2="160" y2="120" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="160" y1="120" x2="178" y2="111" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="160" cy="120" r="3" fill="#0284c7"/>
+    <text x="160" y="158" text-anchor="middle" fill="#0369a1" font-size="10" font-family="sans-serif">타이머 설정 = 기계!</text>
+  </svg>`,
+
+  sensor_light: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#1e293b"/>
+    <!-- hallway -->
+    <rect x="0" y="0" width="320" height="160" fill="#0f172a"/>
+    <rect x="0" y="130" width="320" height="30" fill="#1e293b"/>
+    <!-- ceiling lights -->
+    <rect x="80" y="0" width="6" height="20" rx="3" fill="#475569"/>
+    <circle cx="83" cy="26" r="10" fill="#fef9c3"/>
+    <path d="M70 30 Q83 55 96 30" fill="#fef9c3" opacity="0.3"/>
+    <rect x="234" y="0" width="6" height="20" rx="3" fill="#475569"/>
+    <circle cx="237" cy="26" r="10" fill="#fef9c3"/>
+    <path d="M224 30 Q237 55 250 30" fill="#fef9c3" opacity="0.3"/>
+    <!-- person walking -->
+    <circle cx="160" cy="90" r="12" fill="#fde68a"/>
+    <rect x="154" y="102" width="12" height="22" rx="4" fill="#6366f1"/>
+    <line x1="154" y1="110" x2="144" y2="122" stroke="#6366f1" stroke-width="4" stroke-linecap="round"/>
+    <line x1="166" y1="110" x2="175" y2="122" stroke="#6366f1" stroke-width="4" stroke-linecap="round"/>
+    <line x1="157" y1="124" x2="150" y2="138" stroke="#4f46e5" stroke-width="4" stroke-linecap="round"/>
+    <line x1="163" y1="124" x2="170" y2="138" stroke="#4f46e5" stroke-width="4" stroke-linecap="round"/>
+    <!-- sensor beam -->
+    <path d="M83 40 Q115 90 160 90" stroke="#fef9c3" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.6"/>
+    <!-- label -->
+    <rect x="60" y="100" width="50" height="18" rx="5" fill="#f59e0b"/>
+    <text x="85" y="113" text-anchor="middle" fill="#1e293b" font-size="9" font-weight="700" font-family="sans-serif">감지! ON</text>
+    <text x="160" y="155" text-anchor="middle" fill="#64748b" font-size="10" font-family="sans-serif">센서 감지 → 켜짐 = 단순 기계</text>
+  </svg>`,
+
+  rc_drone: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#e0f2fe"/>
+    <!-- sky -->
+    <circle cx="260" cy="40" r="22" fill="#fef9c3"/>
+    <!-- drone in sky -->
+    <rect x="130" y="35" width="60" height="22" rx="6" fill="#1e293b"/>
+    <!-- arms -->
+    <line x1="130" y1="40" x2="106" y2="28" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+    <line x1="190" y1="40" x2="214" y2="28" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+    <line x1="130" y1="54" x2="106" y2="66" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+    <line x1="190" y1="54" x2="214" y2="66" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+    <!-- propellers -->
+    <ellipse cx="106" cy="27" rx="16" ry="3" fill="#64748b" opacity="0.7"/>
+    <ellipse cx="214" cy="27" rx="16" ry="3" fill="#64748b" opacity="0.7"/>
+    <ellipse cx="106" cy="67" rx="16" ry="3" fill="#64748b" opacity="0.7"/>
+    <ellipse cx="214" cy="67" rx="16" ry="3" fill="#64748b" opacity="0.7"/>
+    <!-- camera -->
+    <rect x="153" y="57" width="14" height="10" rx="3" fill="#374151"/>
+    <circle cx="160" cy="62" r="3" fill="#0ea5e9"/>
+    <!-- controller on ground -->
+    <rect x="85" y="105" width="100" height="40" rx="8" fill="#1e293b"/>
+    <circle cx="105" cy="120" r="7" fill="#334155"/>
+    <circle cx="165" cy="120" r="7" fill="#334155"/>
+    <rect x="117" y="113" width="26" height="8" rx="3" fill="#374151"/>
+    <circle cx="130" cy="135" r="6" fill="#ef4444"/>
+    <!-- person holding controller -->
+    <circle cx="135" cy="95" r="10" fill="#fde68a"/>
+    <!-- dashed control line -->
+    <line x1="135" y1="105" x2="160" y2="60" stroke="#0ea5e9" stroke-width="1.5" stroke-dasharray="5,4"/>
+    <text x="40" y="145" fill="#0369a1" font-size="10" font-weight="700" font-family="sans-serif">사람이 직접 조종 = 인공지능 아님</text>
+  </svg>`,
+
+  rice_cooker: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fefce8"/>
+    <!-- rice cooker -->
+    <rect x="95" y="60" width="130" height="80" rx="10" fill="#e2e8f0"/>
+    <ellipse cx="160" cy="60" rx="65" ry="20" fill="#cbd5e1"/>
+    <ellipse cx="160" cy="56" rx="60" ry="16" fill="#94a3b8"/>
+    <ellipse cx="160" cy="52" rx="55" ry="12" fill="#64748b"/>
+    <!-- steam -->
+    <path d="M140 50 Q135 38 140 28 Q145 18 140 8" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <path d="M160 48 Q155 36 160 26 Q165 16 160 6" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <path d="M180 50 Q175 38 180 28 Q185 18 180 8" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+    <!-- panel -->
+    <rect x="102" y="100" width="116" height="30" rx="6" fill="#1e293b"/>
+    <rect x="110" y="107" width="38" height="14" rx="4" fill="#0f172a"/>
+    <text x="129" y="118" text-anchor="middle" fill="#10b981" font-size="9" font-family="monospace">08:00</text>
+    <!-- button -->
+    <circle cx="178" cy="114" r="9" fill="#ef4444"/>
+    <text x="178" y="118" text-anchor="middle" fill="#fff" font-size="9" font-weight="700" font-family="sans-serif">ON</text>
+    <!-- clock comparison -->
+    <circle cx="48" cy="80" r="30" fill="#fff" stroke="#e2e8f0" stroke-width="2"/>
+    <line x1="48" y1="55" x2="48" y2="80" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="48" y1="80" x2="65" y2="72" stroke="#64748b" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="48" cy="80" r="3" fill="#ef4444"/>
+    <text x="48" y="122" text-anchor="middle" fill="#64748b" font-size="9" font-family="sans-serif">타이머 기계</text>
+    <circle cx="272" cy="80" r="30" fill="#fff" stroke="#e2e8f0" stroke-width="2"/>
+    <text x="272" y="75" text-anchor="middle" fill="#94a3b8" font-size="20">🍚</text>
+    <text x="272" y="95" text-anchor="middle" fill="#1e293b" font-size="9" font-weight="700" font-family="sans-serif">완성!</text>
+    <text x="272" y="122" text-anchor="middle" fill="#64748b" font-size="9" font-family="sans-serif">정해진 요리</text>
+  </svg>`,
+
+  shuttle: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f0fdf4"/>
+    <!-- road/route -->
+    <rect x="0" y="110" width="320" height="30" fill="#94a3b8"/>
+    <rect x="0" y="108" width="320" height="5" fill="#64748b"/>
+    <rect x="10" y="122" width="50" height="4" rx="2" fill="#fff" opacity="0.5"/>
+    <rect x="135" y="122" width="50" height="4" rx="2" fill="#fff" opacity="0.5"/>
+    <rect x="260" y="122" width="50" height="4" rx="2" fill="#fff" opacity="0.5"/>
+    <!-- route map on top -->
+    <line x1="30" y1="60" x2="290" y2="60" stroke="#16a34a" stroke-width="2.5" stroke-dasharray="6,4"/>
+    <!-- stops -->
+    <circle cx="50" cy="60" r="8" fill="#fff" stroke="#16a34a" stroke-width="2.5"/>
+    <text x="50" y="50" text-anchor="middle" fill="#15803d" font-size="9" font-family="sans-serif">A</text>
+    <circle cx="160" cy="60" r="8" fill="#fff" stroke="#16a34a" stroke-width="2.5"/>
+    <text x="160" y="50" text-anchor="middle" fill="#15803d" font-size="9" font-family="sans-serif">B</text>
+    <circle cx="270" cy="60" r="8" fill="#fff" stroke="#16a34a" stroke-width="2.5"/>
+    <text x="270" y="50" text-anchor="middle" fill="#15803d" font-size="9" font-family="sans-serif">C</text>
+    <!-- shuttle bus -->
+    <rect x="82" y="84" width="80" height="30" rx="7" fill="#0284c7"/>
+    <rect x="89" y="89" width="20" height="14" rx="3" fill="#bae6fd"/>
+    <rect x="114" y="89" width="20" height="14" rx="3" fill="#bae6fd"/>
+    <circle cx="96" cy="118" r="7" fill="#1e293b"/>
+    <circle cx="96" cy="118" r="3" fill="#64748b"/>
+    <circle cx="148" cy="118" r="7" fill="#1e293b"/>
+    <circle cx="148" cy="118" r="3" fill="#64748b"/>
+    <text x="122" y="100" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="sans-serif">공항 셔틀</text>
+    <!-- fixed route label -->
+    <rect x="100" y="20" width="120" height="22" rx="8" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+    <text x="160" y="35" text-anchor="middle" fill="#15803d" font-size="10" font-weight="700" font-family="sans-serif">정해진 노선만 운행</text>
+  </svg>`,
+
+  fire_alarm: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fff7ed"/>
+    <!-- wall -->
+    <rect x="0" y="0" width="320" height="160" fill="#fef3c7" opacity="0.3"/>
+    <!-- fire detector on ceiling -->
+    <rect x="130" y="5" width="60" height="15" rx="6" fill="#e2e8f0"/>
+    <circle cx="160" cy="12" r="8" fill="#dc2626"/>
+    <circle cx="160" cy="12" r="4" fill="#fca5a5"/>
+    <!-- alarm waves -->
+    <path d="M146 12 Q134 12 130 24" stroke="#dc2626" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M174 12 Q186 12 190 24" stroke="#dc2626" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M140 12 Q122 12 116 28" stroke="#dc2626" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <path d="M180 12 Q198 12 204 28" stroke="#dc2626" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6"/>
+    <!-- fire -->
+    <path d="M120 140 Q118 118 132 110 Q128 125 138 120 Q130 105 148 95 Q140 115 155 112 Q148 98 162 88 Q158 105 170 108 Q162 95 178 90 Q168 108 176 112 Q186 105 182 120 Q192 112 188 130 Q178 122 160 140 Z" fill="#f97316"/>
+    <path d="M138 140 Q136 125 145 118 Q142 128 150 124 Q144 112 158 104 Q152 118 162 116 Q165 104 172 100 Q166 116 174 118 Q180 110 176 125 Q172 118 158 140 Z" fill="#fbbf24"/>
+    <!-- smoke detector showing 'smoke' -->
+    <path d="M145 65 Q150 52 158 45 Q148 55 155 42" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <path d="M160 65 Q165 52 173 45 Q163 55 170 42" stroke="#94a3b8" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.5"/>
+    <!-- text indicator -->
+    <rect x="50" y="60" width="82" height="28" rx="8" fill="#dc2626"/>
+    <text x="91" y="74" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">🔔 경보 울림!</text>
+    <text x="91" y="86" text-anchor="middle" fill="#fca5a5" font-size="8" font-family="sans-serif">연기감지→경보=센서</text>
+    <rect x="188" y="60" width="82" height="28" rx="8" fill="#e2e8f0"/>
+    <text x="229" y="74" text-anchor="middle" fill="#64748b" font-size="10" font-family="sans-serif">학습 없음</text>
+    <text x="229" y="86" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="sans-serif">판단 없음</text>
+  </svg>`,
+
+  barcode: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f8fafc"/>
+    <!-- counter -->
+    <rect x="0" y="100" width="320" height="60" fill="#e2e8f0"/>
+    <rect x="60" y="60" width="200" height="80" rx="4" fill="#cbd5e1"/>
+    <rect x="80" y="45" width="160" height="70" rx="4" fill="#94a3b8"/>
+    <!-- scanner glass -->
+    <rect x="100" y="55" width="120" height="50" rx="3" fill="#1e293b"/>
+    <rect x="104" y="59" width="112" height="42" rx="2" fill="#0f172a"/>
+    <line x1="104" y1="80" x2="216" y2="80" stroke="#10b981" stroke-width="2" opacity="0.9"/>
+    <!-- product with barcode -->
+    <rect x="128" y="10" width="64" height="50" rx="4" fill="#fde68a"/>
+    <rect x="135" y="40" width="50" height="16" rx="2" fill="#fff"/>
+    <!-- barcode bars -->
+    <rect x="137" y="42" width="2" height="12" fill="#1e293b"/>
+    <rect x="141" y="42" width="3" height="12" fill="#1e293b"/>
+    <rect x="146" y="42" width="1" height="12" fill="#1e293b"/>
+    <rect x="149" y="42" width="3" height="12" fill="#1e293b"/>
+    <rect x="154" y="42" width="2" height="12" fill="#1e293b"/>
+    <rect x="158" y="42" width="1" height="12" fill="#1e293b"/>
+    <rect x="161" y="42" width="3" height="12" fill="#1e293b"/>
+    <rect x="166" y="42" width="2" height="12" fill="#1e293b"/>
+    <rect x="170" y="42" width="1" height="12" fill="#1e293b"/>
+    <rect x="173" y="42" width="3" height="12" fill="#1e293b"/>
+    <rect x="178" y="42" width="2" height="12" fill="#1e293b"/>
+    <rect x="182" y="42" width="1" height="12" fill="#1e293b"/>
+    <!-- price display -->
+    <rect x="200" y="15" width="90" height="35" rx="6" fill="#1e293b"/>
+    <text x="245" y="31" text-anchor="middle" fill="#10b981" font-size="11" font-family="monospace">₩ 2,500</text>
+    <text x="245" y="44" text-anchor="middle" fill="#64748b" font-size="8" font-family="sans-serif">바코드 → 가격표</text>
+  </svg>`,
+
+  water: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f0f9ff"/>
+    <!-- water purifier -->
+    <rect x="100" y="20" width="120" height="120" rx="10" fill="#0284c7"/>
+    <rect x="108" y="28" width="104" height="70" rx="6" fill="#0369a1"/>
+    <!-- display panel -->
+    <rect x="112" y="34" width="96" height="30" rx="5" fill="#0c4a6e"/>
+    <text x="160" y="50" text-anchor="middle" fill="#7dd3fc" font-size="10" font-family="monospace">냉 온 정</text>
+    <text x="160" y="62" text-anchor="middle" fill="#0ea5e9" font-size="9" font-family="sans-serif">버튼을 누르세요</text>
+    <!-- buttons -->
+    <circle cx="130" cy="82" r="11" fill="#0ea5e9"/>
+    <text x="130" y="86" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="sans-serif">냉수</text>
+    <circle cx="160" cy="82" r="11" fill="#6366f1"/>
+    <text x="160" y="86" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="sans-serif">정수</text>
+    <circle cx="190" cy="82" r="11" fill="#ef4444"/>
+    <text x="190" y="86" text-anchor="middle" fill="#fff" font-size="8" font-weight="700" font-family="sans-serif">온수</text>
+    <!-- spout -->
+    <rect x="145" y="98" width="30" height="8" rx="4" fill="#0369a1"/>
+    <path d="M158 106 Q158 115 162 125" stroke="#7dd3fc" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M162 106 Q162 115 162 128" stroke="#7dd3fc" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M166 106 Q166 115 162 125" stroke="#7dd3fc" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- X -->
+    <circle cx="50" cy="80" r="26" fill="#fee2e2"/>
+    <line x1="39" y1="69" x2="61" y2="91" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+    <line x1="61" y1="69" x2="39" y2="91" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+    <text x="50" y="116" text-anchor="middle" fill="#ef4444" font-size="9" font-weight="700" font-family="sans-serif">단순 기계</text>
+    <circle cx="270" cy="80" r="26" fill="#fee2e2"/>
+    <line x1="259" y1="69" x2="281" y2="91" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+    <line x1="281" y1="69" x2="259" y2="91" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+    <text x="270" y="116" text-anchor="middle" fill="#ef4444" font-size="9" font-weight="700" font-family="sans-serif">학습 없음</text>
+  </svg>`,
+
+  robot_arm: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#f1f5f9"/>
+    <!-- factory floor -->
+    <rect x="0" y="130" width="320" height="30" fill="#cbd5e1"/>
+    <!-- conveyor belt -->
+    <rect x="160" y="118" width="140" height="14" rx="4" fill="#94a3b8"/>
+    <circle cx="172" cy="125" r="6" fill="#64748b"/>
+    <circle cx="190" cy="125" r="6" fill="#64748b"/>
+    <circle cx="208" cy="125" r="6" fill="#64748b"/>
+    <circle cx="226" cy="125" r="6" fill="#64748b"/>
+    <circle cx="244" cy="125" r="6" fill="#64748b"/>
+    <circle cx="262" cy="125" r="6" fill="#64748b"/>
+    <circle cx="280" cy="125" r="6" fill="#64748b"/>
+    <!-- products -->
+    <rect x="200" y="108" width="20" height="12" rx="2" fill="#3b82f6"/>
+    <rect x="240" y="108" width="20" height="12" rx="2" fill="#3b82f6"/>
+    <!-- robot arm base -->
+    <rect x="55" y="118" width="40" height="16" rx="4" fill="#475569"/>
+    <!-- arm segments -->
+    <rect x="70" y="70" width="16" height="52" rx="6" fill="#64748b"/>
+    <rect x="55" y="55" width="46" height="18" rx="6" fill="#475569"/>
+    <rect x="32" y="38" width="18" height="22" rx="6" fill="#64748b" transform="rotate(-20 41 49)"/>
+    <rect x="90" y="38" width="18" height="22" rx="6" fill="#64748b" transform="rotate(20 99 49)"/>
+    <!-- gripper -->
+    <rect x="34" y="30" width="10" height="14" rx="3" fill="#334155"/>
+    <rect x="90" y="30" width="10" height="14" rx="3" fill="#334155"/>
+    <!-- item being gripped -->
+    <rect x="46" y="35" width="42" height="14" rx="3" fill="#f97316"/>
+    <!-- cycle arrows -->
+    <path d="M140 80 Q155 60 155 80 Q155 100 140 80" stroke="#10b981" stroke-width="2.5" fill="none" marker-end="url(#g)"/>
+    <text x="160" y="70" fill="#475569" font-size="10" font-weight="700" font-family="sans-serif">같은 동작</text>
+    <text x="160" y="85" fill="#475569" font-size="10" font-family="sans-serif">반복 반복</text>
+    <text x="160" y="100" fill="#475569" font-size="10" font-family="sans-serif">반복...</text>
+  </svg>`,
+
+  boiler: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fff8f0"/>
+    <!-- boiler unit -->
+    <rect x="60" y="30" width="90" height="110" rx="8" fill="#e2e8f0"/>
+    <rect x="68" y="38" width="74" height="60" rx="5" fill="#cbd5e1"/>
+    <!-- gauge -->
+    <circle cx="105" cy="68" r="22" fill="#1e293b"/>
+    <path d="M89 80 A22 22 0 1 1 121 80" stroke="#334155" stroke-width="3" fill="none"/>
+    <path d="M89 80 A22 22 0 1 1 105 47" stroke="#ef4444" stroke-width="3" fill="none"/>
+    <line x1="105" y1="68" x2="96" y2="54" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="105" cy="68" r="3" fill="#f59e0b"/>
+    <text x="105" y="87" text-anchor="middle" fill="#94a3b8" font-size="8" font-family="sans-serif">온도계</text>
+    <!-- ON/OFF based on temp -->
+    <rect x="68" y="105" width="74" height="25" rx="5" fill="#0f172a"/>
+    <text x="105" y="121" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="700" font-family="monospace">18°C → ON</text>
+    <!-- thermometer outside -->
+    <rect x="200" y="40" width="16" height="80" rx="8" fill="#e2e8f0"/>
+    <rect x="203" y="43" width="10" height="55" rx="5" fill="#1e293b"/>
+    <rect x="203" y="78" width="10" height="20" rx="5" fill="#3b82f6"/>
+    <circle cx="208" cy="110" r="9" fill="#3b82f6"/>
+    <text x="226" y="58" fill="#64748b" font-size="10" font-family="sans-serif">20°C 끄기</text>
+    <text x="226" y="75" fill="#64748b" font-size="10" font-family="sans-serif">18°C 켜기</text>
+    <text x="226" y="92" fill="#64748b" font-size="10" font-family="sans-serif">16°C 켜기</text>
+    <line x1="224" y1="64" x2="224" y2="70" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="208" y="140" text-anchor="middle" fill="#ea580c" font-size="9" font-weight="700" font-family="sans-serif">온도 기준 = 기계!</text>
+  </svg>`,
+
+  tram: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#ecfdf5"/>
+    <!-- tracks -->
+    <line x1="0" y1="130" x2="320" y2="130" stroke="#374151" stroke-width="4"/>
+    <line x1="0" y1="140" x2="320" y2="140" stroke="#374151" stroke-width="4"/>
+    <!-- ties -->
+    <rect x="10" y="128" width="8" height="14" fill="#4b5563"/>
+    <rect x="38" y="128" width="8" height="14" fill="#4b5563"/>
+    <rect x="66" y="128" width="8" height="14" fill="#4b5563"/>
+    <rect x="94" y="128" width="8" height="14" fill="#4b5563"/>
+    <rect x="122" y="128" width="8" height="14" fill="#4b5563"/>
+    <rect x="150" y="128" width="8" height="14" fill="#4b5563"/>
+    <rect x="178" y="128" width="8" height="14" fill="#4b5563"/>
+    <rect x="206" y="128" width="8" height="14" fill="#4b5563"/>
+    <rect x="234" y="128" width="8" height="14" fill="#4b5563"/>
+    <rect x="262" y="128" width="8" height="14" fill="#4b5563"/>
+    <rect x="290" y="128" width="8" height="14" fill="#4b5563"/>
+    <!-- tram body -->
+    <rect x="60" y="70" width="200" height="62" rx="6" fill="#16a34a"/>
+    <rect x="64" y="76" width="54" height="32" rx="4" fill="#bbf7d0"/>
+    <rect x="124" y="76" width="54" height="32" rx="4" fill="#bbf7d0"/>
+    <rect x="184" y="76" width="54" height="32" rx="4" fill="#bbf7d0"/>
+    <rect x="64" y="115" width="192" height="8" rx="3" fill="#15803d"/>
+    <!-- overhead wire -->
+    <line x1="0" y1="30" x2="320" y2="30" stroke="#94a3b8" stroke-width="2"/>
+    <line x1="160" y1="30" x2="160" y2="70" stroke="#64748b" stroke-width="2"/>
+    <!-- traffic light -->
+    <rect x="244" y="38" width="20" height="50" rx="5" fill="#1e293b"/>
+    <circle cx="254" cy="50" r="6" fill="#374151"/>
+    <circle cx="254" cy="64" r="6" fill="#ef4444"/>
+    <circle cx="254" cy="78" r="6" fill="#374151"/>
+    <!-- tram stop sign -->
+    <rect x="20" y="38" width="50" height="22" rx="5" fill="#0284c7"/>
+    <text x="45" y="53" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="sans-serif">정거장 A</text>
+    <!-- route label -->
+    <rect x="95" y="35" width="130" height="18" rx="6" fill="#fff" stroke="#16a34a" stroke-width="1.5"/>
+    <text x="160" y="48" text-anchor="middle" fill="#15803d" font-size="10" font-weight="700" font-family="sans-serif">A → B → C 정해진 노선</text>
+  </svg>`,
+
+  musicbox: `<svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+    <rect width="320" height="160" fill="#fdf4ff"/>
+    <!-- music box -->
+    <rect x="90" y="50" width="140" height="90" rx="10" fill="#7c3aed"/>
+    <rect x="96" y="56" width="128" height="68" rx="6" fill="#5b21b6"/>
+    <!-- speaker grid -->
+    <circle cx="130" cy="75" r="22" fill="#4c1d95"/>
+    <circle cx="130" cy="75" r="14" fill="#3b0764"/>
+    <circle cx="130" cy="75" r="6" fill="#5b21b6"/>
+    <circle cx="130" cy="75" r="2" fill="#7c3aed"/>
+    <!-- buttons -->
+    <rect x="160" y="62" width="56" height="14" rx="5" fill="#4c1d95"/>
+    <text x="188" y="73" text-anchor="middle" fill="#c4b5fd" font-size="9" font-family="sans-serif">♩ ♩ ♩</text>
+    <rect x="160" y="80" width="56" height="14" rx="5" fill="#4c1d95"/>
+    <text x="188" y="91" text-anchor="middle" fill="#c4b5fd" font-size="9" font-family="sans-serif">♪ ♫ ♬</text>
+    <rect x="160" y="98" width="56" height="14" rx="5" fill="#ef4444"/>
+    <text x="188" y="109" text-anchor="middle" fill="#fff" font-size="9" font-weight="700" font-family="sans-serif">▶ PLAY</text>
+    <!-- play button on bottom -->
+    <circle cx="160" cy="134" r="8" fill="#c4b5fd"/>
+    <text x="160" y="138" text-anchor="middle" fill="#4c1d95" font-size="9" font-family="sans-serif">▶</text>
+    <!-- fixed notes -->
+    <text x="50" y="60" fill="#a78bfa" font-size="28" font-family="sans-serif">♩</text>
+    <text x="240" y="60" fill="#a78bfa" font-size="28" font-family="sans-serif">♫</text>
+    <text x="46" y="100" fill="#7c3aed" font-size="22" font-family="sans-serif">♬</text>
+    <text x="246" y="100" fill="#7c3aed" font-size="22" font-family="sans-serif">♪</text>
+    <!-- label -->
+    <rect x="86" y="148" width="148" height="14" rx="5" fill="#ede9fe"/>
+    <text x="160" y="158" text-anchor="middle" fill="#5b21b6" font-size="9" font-weight="700" font-family="sans-serif">버튼 → 정해진 노래 재생</text>
+  </svg>`,
+};
+
+// ── Question Data ─────────────────────────────────────────────────
+const ALL_QUESTIONS = [
+  { text:"자율주행 택시가 도로 상황을 보면서 스스로 목적지까지 이동한다.", isAI: true, reason:"주변 상황을 스스로 분석하고 판단해서 움직이는 것이 인공지능의 특징이야!", illust:"car" },
+  { text:"스마트폰이 얼굴을 인식해서 잠금을 해제한다.", isAI: true, reason:"얼굴 데이터를 학습해서 사람을 알아보는 건 인공지능이 하는 일이야!", illust:"face" },
+  { text:"유튜브가 내가 본 영상을 분석해서 다음에 볼 영상을 추천해 준다.", isAI: true, reason:"내 취향을 스스로 파악하고 추천하는 건 인공지능이야!", illust:"youtube" },
+  { text:"의사가 찍은 폐 사진을 보고 AI가 폐렴인지 아닌지 분석한다.", isAI: true, reason:"수많은 사진을 학습해서 병을 찾아내는 건 인공지능이 해!", illust:"xray" },
+  { text:"스마트 스피커에게 '오늘 날씨 알려줘'라고 말하니 바로 대답해 준다.", isAI: true, reason:"사람 목소리를 알아듣고 답하는 건 인공지능의 능력이야!", illust:"speaker" },
+  { text:"드론이 논밭 사진을 찍고 병충해가 생긴 부분을 스스로 찾아낸다.", isAI: true, reason:"사진을 분석해서 이상한 점을 찾는 건 인공지능이 해!", illust:"drone_farm" },
+  { text:"카드사 시스템이 이상한 해외 결제를 스스로 감지해서 알림을 보낸다.", isAI: true, reason:"평소 패턴과 다른 점을 스스로 알아채는 건 인공지능이야!", illust:"credit" },
+  { text:"AI 앱이 내 글쓰기를 읽고 어떤 부분을 고치면 좋을지 알려준다.", isAI: true, reason:"글을 이해하고 더 좋게 만드는 방법을 찾는 건 인공지능이야!", illust:"writing" },
+  { text:"강아지와 고양이 사진을 올리면 앱이 어떤 동물인지 맞힌다.", isAI: true, reason:"사진을 보고 무엇인지 구별하는 건 인공지능이 잘하는 일이야!", illust:"dogcat" },
+  { text:"피부 사진을 찍으면 앱이 피부 상태가 어떤지 분석해 알려준다.", isAI: true, reason:"사진을 분석해서 건강 상태를 판단하는 건 인공지능이야!", illust:"skin" },
+  { text:"운전자가 눈을 감으면 자동차가 '졸음 운전' 경고음을 울린다.", isAI: true, reason:"운전자 표정을 보고 졸음을 판단하는 건 인공지능이야!", illust:"drowsy" },
+  { text:"교통 신호등이 막히는 길을 예측해서 초록불 시간을 자동으로 조절한다.", isAI: true, reason:"교통 상황을 학습하고 스스로 판단하는 건 인공지능이야!", illust:"traffic" },
+  { text:"챗봇이 내 이전 대화를 기억하며 내 상황에 맞게 대답해 준다.", isAI: true, reason:"대화를 이해하고 상황에 맞게 답하는 건 인공지능이야!", illust:"chatbot" },
+  { text:"바둑 AI가 상대방의 수를 분석해서 최선의 수를 스스로 선택한다.", isAI: true, reason:"수많은 경우를 분석하고 스스로 선택하는 건 인공지능이야!", illust:"baduk" },
+  { text:"통역 앱이 내 말을 듣고 바로 다른 나라 말로 바꿔준다.", isAI: true, reason:"언어를 이해하고 번역하는 건 인공지능이 하는 일이야!", illust:"translate" },
+  { text:"버튼을 누르면 음료가 나오는 자판기", isAI: false, reason:"버튼을 눌러서 정해진 음료가 나오는 건 그냥 기계야. 스스로 생각하지 않아!", illust:"vending" },
+  { text:"층 버튼을 누르면 정해진 층으로 이동하는 엘리베이터", isAI: false, reason:"누른 버튼대로 움직이는 건 단순한 기계야. 판단하거나 학습하지 않아!", illust:"elevator" },
+  { text:"설정한 시간에 자동으로 켜지는 에어컨", isAI: false, reason:"정해진 시간에 켜지는 건 타이머 기능이야. 스스로 판단하는 게 아니야!", illust:"timer_ac" },
+  { text:"사람이 지나가면 켜지는 복도 센서등", isAI: false, reason:"움직임을 감지해서 켜지는 건 센서야. 생각하거나 배우지 않아!", illust:"sensor_light" },
+  { text:"리모컨으로 사람이 직접 조종하는 드론", isAI: false, reason:"사람이 리모컨으로 직접 조종하는 건 인공지능이 아니야!", illust:"rc_drone" },
+  { text:"타이머에 맞춰 밥을 짓는 전기밥솥", isAI: false, reason:"정해진 시간에 정해진 방식으로 작동하는 건 단순한 기계야!", illust:"rice_cooker" },
+  { text:"정해진 노선만 반복해서 운행하는 공항 셔틀버스", isAI: false, reason:"미리 정한 경로만 다니는 건 인공지능이 아니야!", illust:"shuttle" },
+  { text:"불꽃이 감지되면 경보를 울리는 화재감지기", isAI: false, reason:"연기를 감지하면 경보를 울리는 건 센서야. 배우거나 판단하지 않아!", illust:"fire_alarm" },
+  { text:"바코드를 스캔하면 가격을 보여주는 계산대", isAI: false, reason:"바코드를 읽어서 가격을 찾는 건 미리 입력된 정보를 꺼내는 거야!", illust:"barcode" },
+  { text:"버튼을 누르면 정해진 양의 물이 나오는 정수기", isAI: false, reason:"버튼 누르면 물이 나오는 건 단순한 기계야. 스스로 생각하지 않아!", illust:"water" },
+  { text:"정해진 동작만 반복하는 공장 로봇 팔", isAI: false, reason:"같은 동작만 반복하도록 프로그램된 건 인공지능이 아니야!", illust:"robot_arm" },
+  { text:"온도가 기준 이하로 내려가면 자동으로 켜지는 보일러", isAI: false, reason:"정해진 온도에서 켜지는 건 온도계와 스위치가 연결된 기계야!", illust:"boiler" },
+  { text:"빨간불에 자동으로 멈추는 정해진 노선의 트램", isAI: false, reason:"신호에 따라 멈추도록 프로그램된 건 단순한 제어 장치야!", illust:"tram" },
+  { text:"버튼을 누르면 노래가 나오는 뮤직박스 장난감", isAI: false, reason:"버튼을 누르면 정해진 노래가 나오는 건 단순한 기계야!", illust:"musicbox" },
+];
+
+// ── Game State ────────────────────────────────────────────────────
+let questions = [], current = 0, score = 0, answered = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for(let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startQuiz() {
+  questions = shuffle(ALL_QUESTIONS).slice(0, 10);
+  current = 0; score = 0; answered = false;
+  showScreen('screen-quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[current];
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('step-info').textContent = (current+1) + ' / 10';
+  document.getElementById('score-live').textContent = '점수: ' + score;
+  document.getElementById('prog-fill').style.width = (current/10*100) + '%';
+  document.getElementById('q-illust').innerHTML = ILLUSTRATIONS[q.illust] || '';
+  const btnY = document.getElementById('btn-yes');
+  const btnN = document.getElementById('btn-no');
+  btnY.className = 'choice-btn'; btnY.disabled = false;
+  btnN.className = 'choice-btn'; btnN.disabled = false;
+  const fb = document.getElementById('feedback-box');
+  fb.className = 'feedback-box'; fb.textContent = '';
+  document.getElementById('next-btn').className = 'next-btn';
+}
+
+function answer(userSaysAI) {
+  if(answered) return;
+  answered = true;
+  const q = questions[current];
+  const correct = (userSaysAI === q.isAI);
+  if(correct) score++;
+  const btnY = document.getElementById('btn-yes');
+  const btnN = document.getElementById('btn-no');
+  btnY.disabled = true; btnN.disabled = true;
+  if(userSaysAI) {
+    btnY.classList.add(correct ? 'correct' : 'wrong');
+    if(!correct) btnN.classList.add('reveal');
+  } else {
+    btnN.classList.add(correct ? 'correct' : 'wrong');
+    if(!correct) btnY.classList.add('reveal');
+  }
+  const fb = document.getElementById('feedback-box');
+  fb.textContent = (correct ? '✅ 맞았어! ' : '❌ 아쉬워! ') + q.reason;
+  fb.className = 'feedback-box show ' + (correct ? 'feedback-correct' : 'feedback-wrong');
+  document.getElementById('score-live').textContent = '점수: ' + score;
+  const nb = document.getElementById('next-btn');
+  nb.className = 'next-btn show';
+  nb.textContent = current < 9 ? '다음 문제 →' : '🏆 결과 보기 →';
+}
+
+function nextQuestion() {
+  current++;
+  if(current >= 10) { showResult(); return; }
+  renderQuestion();
+}
+
+function showResult() {
+  document.getElementById('prog-fill').style.width = '100%';
+  document.getElementById('score-num').textContent = score;
+  document.getElementById('res-correct').textContent = score;
+  document.getElementById('res-wrong').textContent = 10 - score;
+  let badge, title, desc, badgeStyle, emoji;
+  if(score <= 3) {
+    badge = "Lv.1 AI 새싹 🌱"; title = "AI 새싹";
+    desc = "아직 인공지능이 무엇인지 배우는 단계야! 괜찮아, 지금부터 하나씩 알아가면 금방 잘하게 될 거야. 다시 도전해 봐!";
+    badgeStyle = "background:#d1fae5; color:#065f46;";
+    emoji = "🌱";
+  } else if(score <= 5) {
+    badge = "Lv.2 AI 탐험가 🔍"; title = "AI 탐험가";
+    desc = "인공지능에 대해 조금씩 이해하고 있어! 절반 정도 맞혔는데 더 공부하면 금방 전문가가 될 거야.";
+    badgeStyle = "background:#dbeafe; color:#1e40af;";
+    emoji = "🔍";
+  } else if(score <= 7) {
+    badge = "Lv.3 AI 연구원 🔬"; title = "AI 연구원";
+    desc = "인공지능을 꽤 잘 이해하고 있어! 조금만 더 공부하면 AI 전문가가 될 것 같은데?";
+    badgeStyle = "background:#fef9c3; color:#854d0e;";
+    emoji = "🔬";
+  } else if(score <= 9) {
+    badge = "Lv.4 AI 전문가 🏆"; title = "AI 전문가";
+    desc = "정말 대단해! 인공지능을 아주 잘 이해하고 있어. 미래의 AI 개발자가 될 것 같은데?";
+    badgeStyle = "background:#e0f2fe; color:#0369a1;";
+    emoji = "🏆";
+  } else {
+    badge = "Lv.5 AI 천재 ⭐"; title = "AI 천재!!";
+    desc = "완벽해!! 10문제 모두 맞혔어! 너는 진짜 AI 천재야. 앞으로 인공지능 분야를 이끌어 나갈 것 같아!";
+    badgeStyle = "background:#f3e8ff; color:#6d28d9; border: 2px solid #a78bfa;";
+    emoji = "⭐";
+  }
+  document.getElementById('result-illust').innerHTML =
+    `<div style="font-size:56px; margin-bottom:8px;">${emoji}</div>`;
+  document.getElementById('level-badge').textContent = badge;
+  document.getElementById('level-badge').style.cssText = badgeStyle;
+  document.getElementById('level-title').textContent = title;
+  document.getElementById('level-desc').textContent = desc;
+  showScreen('screen-result');
+}
+
+function retryQuiz() {
+  showScreen('screen-intro');
+}
+</script>
+</body>
+</html>
